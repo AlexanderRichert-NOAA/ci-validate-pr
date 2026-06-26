@@ -72,8 +72,7 @@ jobs:
             }
             else {
               // 'No AI' is unchecked, and the placeholder is gone (meaning it was customized).
-              // Per your instructions, the AI checkbox can be checked (reviewed) or unchecked (pending review).
-              const match = prBody.match(/- \[[ xX]\] (.*?) was used to assist with developing this code/);
+              const match = prBody.match(/- \[[xX]\] (.*?) was used to assist with developing this code/);
               if (!match || !match[1] || !match[1].trim()) {
                 core.setFailed("❌ Error: GenAI tool used, but no tool name specified. Please replace '[Insert AI tool name]' with the name of the tool you used.");
                 return;
