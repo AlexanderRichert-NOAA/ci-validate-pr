@@ -60,8 +60,8 @@ jobs:
             const hasPlaceholder = prBody.includes("[Insert AI tool name]");
 
             // Fail if two selections or no selections
-            if (checkedGenAI && checkedNoAI) ||  !(checkedGenAI && checkedNoAI) {
-              core.setFailed("❌ Error: Invalid selections. One and only one GenAI declaration checkbox can be selected.");
+            if (checkedGenAI === checkedNoAI) {
+              core.setFailed("❌ Error: Invalid GenAI declaration. One and only one GenAI declaration checkbox must be selected.");
             }
             // Succeed if no AI tools were used
             else if (checkedNoAI) {
