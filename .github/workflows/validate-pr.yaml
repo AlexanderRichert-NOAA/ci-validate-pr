@@ -46,7 +46,7 @@ jobs:
             const prBody = context.payload.pull_request.body;
 
             if (!prBody) {
-              core.setFailed("❌ Error: PR description is empty. Please fill out the template, including the required GenAI usage disclosure.");
+              core.setFailed("❌ PR description is empty. Please fill out the template, including the required GenAI usage disclosure.");
               return;
             }
 
@@ -61,7 +61,7 @@ jobs:
 
             // Fail if two selections or no selections
             if (checkedGenAI === checkedNoAI) {
-              core.setFailed("❌ Error: Invalid GenAI declaration. One and only one GenAI declaration checkbox must be selected.");
+              core.setFailed("❌ Invalid GenAI declaration. One and only one GenAI declaration checkbox must be selected.");
             }
             // Succeed if no AI tools were used
             else if (checkedNoAI) {
@@ -69,7 +69,7 @@ jobs:
             }
             // Fail if model not specified
             else if (hasPlaceholder) {
-              core.setFailed("❌ Error: Replace '[Insert AI tool name]' with the tool you used.");
+              core.setFailed("❌ Replace '[Insert AI tool name]' with the tool you used.");
             }
             // Succeed if box is checked and placeholder is gone
             else if (checkedGenAI) {
@@ -121,7 +121,7 @@ jobs:
             const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
 
             if (approvalCount < requiredApprovals) {
-              core.setFailed(`❌ Error: This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}.`);
+              core.setFailed(`❌ This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}.`);
             } else {
               console.log(`✅ Success: PR from an external contributor has ${approvalCount} approval(s).`);
             }
@@ -195,7 +195,7 @@ jobs:
             const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
 
             if (approvalCount < requiredApprovals) {
-              core.setFailed(`❌ Error: This PR requires at least ${requiredApprovals} approval(s) due to its size or modified files. It currently has ${approvalCount}.`);
+              core.setFailed(`❌ This PR requires at least ${requiredApprovals} approval(s) due to its size or modified files. It currently has ${approvalCount}.`);
             } else {
               console.log(`✅ Success: PR has ${approvalCount} approval(s), meeting the requirement.`);
             }
