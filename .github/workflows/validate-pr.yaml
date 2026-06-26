@@ -4,8 +4,8 @@ description: "This reusable GitHub Actions workflow provides various optional PR
 on:
   workflow_call:
     inputs:
-      validate-ai-disclosure:
-        description: "If true, runs the AI disclosure validation check on the PR body."
+      validate-genai-disclosure:
+        description: "If true, runs the GenAI disclosure validation check on the PR body."
         required: false
         type: boolean
         default: false
@@ -25,60 +25,66 @@ on:
         type: number
         default: 10
       critical-files:
-        description: "Newline-separated list of modified files to trigger the minimum approver requirement ('approvals-for-critical-changes')."
+        description: "Newline-separated list of files that, if modified, trigger the minimum approver requirement ('approvals-for-critical-changes')."
         required: false
         type: string
         default: ''
 
 jobs:
-  validate-pull-request:
+  validate-genai-disclosure:
+    name: "Check GenAI disclosure"
     runs-on: ubuntu-latest
+    if: inputs.validate-genai-disclosure
     steps:
-      - name: Verify AI disclosure compliance
-        if: inputs.validate-ai-disclosure
+      - name: Verify GenAI disclosure compliance
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
           script: |
             const prBody = context.payload.pull_request.body;
-            
+
             if (!prBody) {
-              core.setFailed("❌ Error: PR description is empty. Please fill out the template, including the required Generative AI usage disclosure.");
+              core.setFailed("❌ Error: PR description is empty. Please fill out the template, including the required GenAI usage disclosure.");
               return;
             }
 
             // 1. Check if the AI checkbox is marked
-            const checkedAI = /- \[[xX]\] .*? was used to assist with developing this code/.test(prBody);
-            
+            const checkedGenAI = /- \[[xX]\] .*? was used to assist with developing this code/.test(prBody);
+
             // 2. Check if the No-AI checkbox is marked
             const checkedNoAI = /- \[[xX]\] No generative AI tools were used/.test(prBody);
-            
+
             // 3. Check if the exact placeholder string still exists
             const hasPlaceholder = prBody.includes("[Insert AI tool name]");
 
             // Validation Logic Matrix
-            if (checkedAI && checkedNoAI) {
+            if (checkedGenAI && checkedNoAI) {
               core.setFailed("❌ Error: Conflicting selections. You cannot check both the AI-assisted and no-AI boxes.");
-            } 
+            }
             else if (checkedNoAI) {
               console.log("✅ Success: Developer declared no AI tools were used.");
-            } 
+            }
             else if (hasPlaceholder) {
               // If 'No AI' isn't checked, and the placeholder is still there, they skipped the section.
               core.setFailed("❌ Error: Compliance action required. You must either check 'No generative AI tools' OR replace '[Insert AI tool name]' with the tool you used.");
-            } 
+            }
             else {
               // 'No AI' is unchecked, and the placeholder is gone (meaning it was customized).
               // Per your instructions, the AI checkbox can be checked (reviewed) or unchecked (pending review).
               const match = prBody.match(/- \[[ xX]\] (.*?) was used to assist with developing this code/);
               if (!match || !match[1] || !match[1].trim()) {
-                core.setFailed("❌ Error: AI tool used, but no tool name specified. Please replace '[Insert AI tool name]' with the name of the tool you used.");
+                core.setFailed("❌ Error: GenAI tool used, but no tool name specified. Please replace '[Insert AI tool name]' with the name of the tool you used.");
                 return;
               }
               const toolName = match[1].trim();
-              console.log(`✅ Success: AI tool specified as "${toolName}"`);
+              console.log(`✅ Success: GenAI tool specified as "${toolName}"`);
             }
+
+  validate-external-contributor-approvals:
+    name: "Check external contributor approvals"
+    runs-on: ubuntu-latest
+    if: inputs.approvals-for-external-contributors > 0
+    steps:
       - name: Require approvals for external contributors
-        if: inputs.approvals-for-external-contributors > 0
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -120,8 +126,13 @@ jobs:
             } else {
               console.log(`✅ Success: PR from an external contributor has ${approvalCount} approval(s).`);
             }
+
+  validate-critical-change-approvals:
+    name: "Check critical change approvals"
+    runs-on: ubuntu-latest
+    if: inputs.approvals-for-critical-changes > 0
+    steps:
       - name: Require approvals for large or critical changes
-        if: inputs.approvals-for-critical-changes > 0
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

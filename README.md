@@ -6,7 +6,7 @@ This repository provides a reusable GitHub Actions workflow with several optiona
 
 | Check | What it does |
 |---|---|
-| **AI disclosure** | Ensures the PR body contains a completed Generative AI usage declaration |
+| **GenAI disclosure** | Ensures the PR body contains a completed GenAI usage declaration |
 | **External contributor approvals** | Requires a minimum number of approvals when the PR author is not a repo owner or collaborator |
 | **Critical change approvals** | Requires a minimum number of approvals when the PR modifies many files or specific critical files |
 
@@ -26,9 +26,9 @@ on:
 
 jobs:
   validate:
-    uses: NOAA-EMC/ci-validate-pr/.github/workflows/validate-pr.yaml@main
+    uses: NOAA-EMC/ci-validate-pr/.github/workflows/validate-pr.yaml@93efa0c40935a575689fc640acd46e845a45f679
     with:
-      validate-ai-disclosure: true
+      validate-genai-disclosure: true
       approvals-for-external-contributors: 1
       approvals-for-critical-changes: 2
       critical-file-count: 10
@@ -44,7 +44,7 @@ jobs:
 
 | Input | Type | Default | Description |
 |---|---|---|---|
-| `validate-ai-disclosure` | `boolean` | `false` | If true, runs the AI disclosure validation check on the PR body |
+| `validate-genai-disclosure` | `boolean` | `false` | If true, runs the GenAI disclosure validation check on the PR body |
 | `approvals-for-external-contributors` | `number` | `0` (disabled) | Required number of approvers for PRs from external contributors. |
 | `approvals-for-critical-changes` | `number` | `0` (disabled) | Required number of approvers for PRs that modify many files (>='critical-file-count') or critical files ('critical-files'). |
 | `critical-file-count` | `number` | `10` | Minimum number of modified files to trigger the minimum approver requirement ('approvals-for-critical-changes'). |
