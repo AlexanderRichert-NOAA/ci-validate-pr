@@ -35,6 +35,8 @@ jobs:
     name: "Check GenAI disclosure"
     runs-on: ubuntu-latest
     if: inputs.validate-genai-disclosure
+    permissions:
+      pull-requests: read
     steps:
       - name: Verify GenAI disclosure compliance
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
@@ -83,6 +85,8 @@ jobs:
     name: "Check external contributor approvals"
     runs-on: ubuntu-latest
     if: inputs.approvals-for-external-contributors > 0
+    permissions:
+      pull-requests: read
     steps:
       - name: Require approvals for external contributors
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
@@ -131,6 +135,8 @@ jobs:
     name: "Check critical change approvals"
     runs-on: ubuntu-latest
     if: inputs.approvals-for-critical-changes > 0
+    permissions:
+      pull-requests: read
     steps:
       - name: Require approvals for large or critical changes
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
