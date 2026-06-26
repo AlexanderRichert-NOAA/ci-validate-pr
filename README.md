@@ -21,8 +21,6 @@ name: Validate PR
 on:
   pull_request:
     types: [opened, synchronize, reopened, review_requested, edited]
-  pull_request_review:
-    types: [submitted]
 
 jobs:
   Checks:
@@ -40,7 +38,8 @@ jobs:
 ```
 
 > [!NOTE]
-> Approval-based checks require `pull_request_review` as a trigger so the workflow re-runs when reviews are submitted.
+> Approval-based checks can use `pull_request_review:types:[submitted]` as a trigger so the workflow re-runs when reviews are submitted.
+> This will lead to duplicate checks, therefore it may be preferably to simply rerun the check manually when the approvals are complete.
 
 ## Inputs
 
