@@ -122,7 +122,7 @@ jobs:
             const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
 
             if (approvalCount < requiredApprovals) {
-              core.setFailed(`❌ This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}. ⟳ Re-run workflow manually when approvals are complete.`);
+              core.setFailed(`❌ This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}. 🔄 Re-run workflow manually when approvals are complete.`);
             } else {
               console.log(`✅ Success: PR from an external contributor has ${approvalCount} approval(s).`);
             }
