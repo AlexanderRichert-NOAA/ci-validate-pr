@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   validate-genai-disclosure:
-    name: "Check GenAI disclosure"
+    name: "GenAI disclosure"
     runs-on: ubuntu-latest
     if: inputs.validate-genai-disclosure
     steps:
@@ -83,7 +83,7 @@ jobs:
             }
 
   validate-external-contributor-approvals:
-    name: "Check external contributor approvals"
+    name: "External contributor approvals"
     runs-on: ubuntu-latest
     if: inputs.approvals-for-external-contributors > 0
     steps:
@@ -131,7 +131,7 @@ jobs:
             }
 
   validate-critical-change-approvals:
-    name: "Check critical change approvals"
+    name: "Critical change approvals"
     runs-on: ubuntu-latest
     if: inputs.approvals-for-critical-changes > 0
     steps:
