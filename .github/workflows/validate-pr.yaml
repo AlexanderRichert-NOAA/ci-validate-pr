@@ -89,15 +89,16 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const requiredApprovals = ${{ inputs.approvals-for-external-contributors }};
+            const author = context.payload.pull_request.user.login;
             const authorAssociation = context.payload.pull_request.author_association;
             const internalAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
 
             if (internalAssociations.includes(authorAssociation)) {
-              console.log(`PR author is a '${authorAssociation}'. Skipping external contributor approval check.`);
+              console.log(`PR author '${author}' is a '${authorAssociation}'. Skipping external contributor approval check.`);
               return;
             }
 
-            console.log(`PR author is an external contributor ('${authorAssociation}'). Checking for ${requiredApprovals} approval(s).`);
+            console.log(`PR author '${author}' is an external contributor ('${authorAssociation}'). Checking for ${requiredApprovals} approval(s).`);
 
             const { data: reviews } = await github.rest.pulls.listReviews({
               owner: context.repo.owner,
