@@ -59,25 +59,22 @@ jobs:
             // 3. Check if the exact placeholder string still exists
             const hasPlaceholder = prBody.includes("[Insert AI tool name]");
 
-            // Validation Logic Matrix
-            if (checkedGenAI && checkedNoAI) {
-              core.setFailed("❌ Error: Conflicting selections. You cannot check both the AI-assisted and no-AI boxes.");
+            // Fail if two selections or no selections
+            if (checkedGenAI && checkedNoAI) ||  !(checkedGenAI && checkedNoAI) {
+              core.setFailed("❌ Error: Invalid selections. One and only one GenAI declaration checkbox can be selected.");
             }
+            // Succeed if no AI tools were used
             else if (checkedNoAI) {
               console.log("✅ Success: Developer declared no AI tools were used.");
             }
+            // Fail if model not specified
             else if (hasPlaceholder) {
-              // If 'No AI' isn't checked, and the placeholder is still there, they skipped the section.
-              core.setFailed("❌ Error: Compliance action required. You must either check 'No generative AI tools' OR replace '[Insert AI tool name]' with the tool you used.");
+              core.setFailed("❌ Error: Replace '[Insert AI tool name]' with the tool you used.");
             }
-            else {
+            // Succeed if box is checked and placeholder is gone
+            else if (checkedGenAI) {
               // 'No AI' is unchecked, and the placeholder is gone (meaning it was customized).
-              const match = prBody.match(/- \[[xX]\] (.*?) was used to assist with developing this code/);
-              if (!match || !match[1] || !match[1].trim()) {
-                core.setFailed("❌ Error: GenAI tool used, but no tool name specified. Please replace '[Insert AI tool name]' with the name of the tool you used.");
-                return;
-              }
-              const toolName = match[1].trim();
+              const toolName = prBody.match(/- \[[xX]\] (.*?) was used to assist with developing this code/)[1].trim();
               console.log(`✅ Success: GenAI tool specified as "${toolName}"`);
             }
 
