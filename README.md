@@ -12,7 +12,7 @@ This repository provides a reusable GitHub Actions workflow with several optiona
 
 ## Usage
 
-Call this workflow from your own workflow using `workflow_call`:
+Call this workflow from your own workflow:
 
 ```yaml
 # .github/workflows/validate-pr.yml
@@ -49,3 +49,7 @@ jobs:
 | `approvals-for-critical-changes` | `number` | `0` (disabled) | Required number of approvers for PRs that modify many files (>='critical-file-count') or critical files ('critical-files'). |
 | `critical-file-count` | `number` | `10` | Minimum number of modified files to trigger the minimum approver requirement ('approvals-for-critical-changes'). |
 | `critical-files` | `string` | `''` | Newline-separated list of files that, if modified, trigger the minimum approver requirement ('approvals-for-critical-changes'). |
+
+
+_Generative AI tools are used to assist with developing this code._
+_The code has been reviewed, edited, and validated by NWS staff._
