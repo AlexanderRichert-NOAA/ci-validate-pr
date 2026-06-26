@@ -26,6 +26,8 @@ on:
 
 jobs:
   validate:
+    permissions:
+      pull-requests: read
     uses: NOAA-EMC/ci-validate-pr/.github/workflows/validate-pr.yaml@93efa0c40935a575689fc640acd46e845a45f679
     with:
       validate-genai-disclosure: true
