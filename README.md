@@ -20,7 +20,7 @@ name: Validate PR
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, review_requested]
+    types: [opened, synchronize, reopened, review_requested, edited]
   pull_request_review:
     types: [submitted]
 
