@@ -85,7 +85,7 @@ jobs:
   validate-external-approvals:
     uses: NOAA-EMC/ci-validate-pr/validate-external-contributor-approvals.yaml@a3c7e3ee61dc1c6f879a59d82d1f48e1e9f9fffa
     with:
-      approvals-for-external-contributors: 1
+      approvals-for-external-contributors: 2
 ```
 
 ### Inputs
