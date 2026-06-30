@@ -94,6 +94,6 @@ jobs:
 |---|---|---|---|
 | `approvals-for-external-contributors` | `number` | `0` | Required number of approvers for PRs from external contributors. |
 
-
+---
 _Generative AI tools are used to assist with developing this code._
 _The code has been reviewed, edited, and validated by NWS staff._
