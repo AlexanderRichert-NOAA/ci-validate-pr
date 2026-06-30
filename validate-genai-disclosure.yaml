@@ -1,0 +1,52 @@
+name: "Validate GenAI disclosure"
+description: "This reusable GitHub Actions workflow validates the GenAI disclosure in a PR body."
+
+on:
+  workflow_call:
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-genai-disclosure:
+    name: "GenAI disclosure"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify GenAI disclosure compliance
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const prBody = context.payload.pull_request.body;
+
+            if (!prBody) {
+              core.setFailed("❌ PR description is empty. Please fill out the template, including the required GenAI usage disclosure.");
+              return;
+            }
+
+            // 1. Check if the AI checkbox is marked
+            const checkedGenAI = /- \[[xX]\] .*? was used to assist with developing this code/.test(prBody);
+
+            // 2. Check if the No-AI checkbox is marked
+            const checkedNoAI = /- \[[xX]\] No generative AI tools were used/.test(prBody);
+
+            // 3. Check if the exact placeholder string still exists
+            const hasPlaceholder = prBody.includes("[Insert AI tool name]");
+
+            // Fail if two selections or no selections
+            if (checkedGenAI === checkedNoAI) {
+              core.setFailed("❌ Invalid GenAI declaration. One and only one GenAI declaration checkbox must be selected.");
+            }
+            // Succeed if no AI tools were used
+            else if (checkedNoAI) {
+              console.log("✅ Success: Developer declared no AI tools were used.");
+            }
+            // Fail if model not specified
+            else if (hasPlaceholder) {
+              core.setFailed("❌ Replace '[Insert AI tool name]' with the tool you used.");
+            }
+            // Succeed if box is checked and placeholder is gone
+            else if (checkedGenAI) {
+              // 'No AI' is unchecked, and the placeholder is gone (meaning it was customized).
+              const toolName = prBody.match(/- \[[xX]\] (.*?) was used to assist with developing this code/)[1].trim();
+              console.log(`✅ Success: GenAI tool specified as "${toolName}"`);
+            }

@@ -36,167 +36,20 @@ permissions:
 jobs:
   validate-genai-disclosure:
     name: "GenAI disclosure"
-    runs-on: ubuntu-latest
     if: inputs.validate-genai-disclosure
-    steps:
-      - name: Verify GenAI disclosure compliance
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
-        with:
-          script: |
-            const prBody = context.payload.pull_request.body;
-
-            if (!prBody) {
-              core.setFailed("❌ PR description is empty. Please fill out the template, including the required GenAI usage disclosure.");
-              return;
-            }
-
-            // 1. Check if the AI checkbox is marked
-            const checkedGenAI = /- \[[xX]\] .*? was used to assist with developing this code/.test(prBody);
-
-            // 2. Check if the No-AI checkbox is marked
-            const checkedNoAI = /- \[[xX]\] No generative AI tools were used/.test(prBody);
-
-            // 3. Check if the exact placeholder string still exists
-            const hasPlaceholder = prBody.includes("[Insert AI tool name]");
-
-            // Fail if two selections or no selections
-            if (checkedGenAI === checkedNoAI) {
-              core.setFailed("❌ Invalid GenAI declaration. One and only one GenAI declaration checkbox must be selected.");
-            }
-            // Succeed if no AI tools were used
-            else if (checkedNoAI) {
-              console.log("✅ Success: Developer declared no AI tools were used.");
-            }
-            // Fail if model not specified
-            else if (hasPlaceholder) {
-              core.setFailed("❌ Replace '[Insert AI tool name]' with the tool you used.");
-            }
-            // Succeed if box is checked and placeholder is gone
-            else if (checkedGenAI) {
-              // 'No AI' is unchecked, and the placeholder is gone (meaning it was customized).
-              const toolName = prBody.match(/- \[[xX]\] (.*?) was used to assist with developing this code/)[1].trim();
-              console.log(`✅ Success: GenAI tool specified as "${toolName}"`);
-            }
+    uses: ./validate-genai-disclosure.yaml
 
   validate-external-contributor-approvals:
     name: "External contributor approvals"
-    runs-on: ubuntu-latest
     if: inputs.approvals-for-external-contributors > 0
-    steps:
-      - name: Require approvals for external contributors
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const requiredApprovals = ${{ inputs.approvals-for-external-contributors }};
-            const author = context.payload.pull_request.user.login;
-            const authorAssociation = context.payload.pull_request.author_association;
-            const internalAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
-
-            if (internalAssociations.includes(authorAssociation)) {
-              console.log(`PR author '${author}' is a '${authorAssociation}'. Skipping external contributor approval check.`);
-              return;
-            }
-
-            console.log(`PR author '${author}' is an external contributor ('${authorAssociation}'). Checking for ${requiredApprovals} approval(s).`);
-
-            const { data: reviews } = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-
-            // The list of reviews can have multiple reviews from the same user.
-            // We only want to count the most recent *submitted* review from each user.
-            const latestReviews = {};
-            for (const review of reviews) {
-              if (review.state === 'PENDING') {
-                continue; // Ignore pending reviews
-              }
-              // If we haven't seen this user, or this review is more recent, store it.
-              if (!latestReviews[review.user.login] || new Date(review.submitted_at) > new Date(latestReviews[review.user.login].submitted_at)) {
-                latestReviews[review.user.login] = review;
-              }
-            }
-
-            const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
-
-            if (approvalCount < requiredApprovals) {
-              core.setFailed(`❌ This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}. 🔄 Re-run workflow manually when approvals are complete.`);
-            } else {
-              console.log(`✅ Success: PR from an external contributor has ${approvalCount} approval(s).`);
-            }
+    uses: ./validate-external-contributor-approvals.yaml
+    with:
+      approvals-for-external-contributors: ${{ inputs.approvals-for-external-contributors }}
 
   validate-critical-change-approvals:
     name: "Critical change approvals"
-    runs-on: ubuntu-latest
-    if: inputs.approvals-for-critical-changes > 0
-    steps:
-      - name: Require approvals for large or critical changes
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const requiredApprovals = ${{ inputs.approvals-for-critical-changes }};
-            const fileChangeThreshold = ${{ inputs.critical-file-count }};
-            const criticalFilesInput = `${{ inputs.critical-files }}`;
-            const criticalFiles = criticalFilesInput.split('\n').map(f => f.trim()).filter(f => f);
-
-            const files = await github.paginate(github.rest.pulls.listFiles, {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-              per_page: 100,
-            });
-
-            const fileCount = files.length;
-            const modifiedFiles = files.map(f => f.filename);
-
-            const isLargeChange = fileCount >= fileChangeThreshold;
-            const modifiedCriticalFiles = modifiedFiles.filter(file => criticalFiles.includes(file));
-            const hasCriticalFiles = modifiedCriticalFiles.length > 0;
-
-            if (!isLargeChange && !hasCriticalFiles) {
-              console.log(`PR does not meet criteria for large/critical change. Skipping approval check.`);
-              console.log(`- File count is ${fileCount}, which is less than the threshold of ${fileChangeThreshold}.`);
-              console.log(`- No critical files were modified.`);
-              return;
-            }
-
-            let reason = '';
-            if (isLargeChange) {
-              reason += `PR modifies ${fileCount} files (threshold is ${fileChangeThreshold}). `;
-            }
-            if (hasCriticalFiles) {
-              reason += `PR modifies critical files: ${modifiedCriticalFiles.join(', ')}. `;
-            }
-
-            console.log(`Triggering approval check. Reason: ${reason.trim()}`);
-            console.log(`Checking for ${requiredApprovals} approval(s).`);
-
-            const { data: reviews } = await github.rest.pulls.listReviews({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.payload.pull_request.number,
-            });
-
-            // The list of reviews can have multiple reviews from the same user.
-            // We only want to count the most recent *submitted* review from each user.
-            const latestReviews = {};
-            for (const review of reviews) {
-              if (review.state === 'PENDING') {
-                continue; // Ignore pending reviews
-              }
-              // If we haven't seen this user, or this review is more recent, store it.
-              if (!latestReviews[review.user.login] || new Date(review.submitted_at) > new Date(latestReviews[review.user.login].submitted_at)) {
-                latestReviews[review.user.login] = review;
-              }
-            }
-
-            const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
-
-            if (approvalCount < requiredApprovals) {
-              core.setFailed(`❌ This PR requires at least ${requiredApprovals} approval(s) due to its size or modified files. It currently has ${approvalCount}.`);
-            } else {
-              console.log(`✅ Success: PR has ${approvalCount} approval(s), meeting the requirement.`);
-            }
+    uses: ./validate-critical-change-approvals.yaml
+    with:
+      approvals-for-critical-changes: ${{ inputs.approvals-for-critical-changes }}
+      critical-file-count: ${{ inputs.critical-file-count }}
+      critical-files: ${{ inputs.critical-files }}

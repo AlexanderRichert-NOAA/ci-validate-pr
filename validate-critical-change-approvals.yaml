@@ -1,0 +1,104 @@
+name: "Validate critical change approvals"
+description: "This reusable GitHub Actions workflow requires a minimum number of approvals for PRs that modify many files or critical files."
+
+on:
+  workflow_call:
+    inputs:
+      approvals-for-critical-changes:
+        description: "Required number of approvers for PRs that modify many files ('critical-file-count') or critical files ('critical-files')."
+        required: false
+        type: number
+        default: 0
+      critical-file-count:
+        description: "Minimum number of modified files to trigger the minimum approver requirement ('approvals-for-critical-changes')."
+        required: false
+        type: number
+        default: 10
+      critical-files:
+        description: "Newline-separated list of files that, if modified, trigger the minimum approver requirement ('approvals-for-critical-changes')."
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-critical-change-approvals:
+    name: "Critical change approvals"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require approvals for large or critical changes
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const requiredApprovals = ${{ inputs.approvals-for-critical-changes }};
+
+            if (requiredApprovals === 0) {
+              console.log('`approvals-for-critical-changes` is 0. Check is successful.');
+              return;
+            }
+
+            const fileChangeThreshold = ${{ inputs.critical-file-count }};
+            const criticalFilesInput = `${{ inputs.critical-files }}`;
+            const criticalFiles = criticalFilesInput.split('\n').map(f => f.trim()).filter(f => f);
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+
+            const fileCount = files.length;
+            const modifiedFiles = files.map(f => f.filename);
+
+            const isLargeChange = fileCount >= fileChangeThreshold;
+            const modifiedCriticalFiles = modifiedFiles.filter(file => criticalFiles.includes(file));
+            const hasCriticalFiles = modifiedCriticalFiles.length > 0;
+
+            if (!isLargeChange && !hasCriticalFiles) {
+              console.log(`PR does not meet criteria for large/critical change. Skipping approval check.`);
+              console.log(`- File count is ${fileCount}, which is less than the threshold of ${fileChangeThreshold}.`);
+              console.log(`- No critical files were modified.`);
+              return;
+            }
+
+            let reason = '';
+            if (isLargeChange) {
+              reason += `PR modifies ${fileCount} files (threshold is ${fileChangeThreshold}). `;
+            }
+            if (hasCriticalFiles) {
+              reason += `PR modifies critical files: ${modifiedCriticalFiles.join(', ')}. `;
+            }
+
+            console.log(`Triggering approval check. Reason: ${reason.trim()}`);
+            console.log(`Checking for ${requiredApprovals} approval(s).`);
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            // The list of reviews can have multiple reviews from the same user.
+            // We only want to count the most recent *submitted* review from each user.
+            const latestReviews = {};
+            for (const review of reviews) {
+              if (review.state === 'PENDING') {
+                continue; // Ignore pending reviews
+              }
+              // If we haven't seen this user, or this review is more recent, store it.
+              if (!latestReviews[review.user.login] || new Date(review.submitted_at) > new Date(latestReviews[review.user.login].submitted_at)) {
+                latestReviews[review.user.login] = review;
+              }
+            }
+
+            const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
+
+            if (approvalCount < requiredApprovals) {
+              core.setFailed(`❌ This PR requires at least ${requiredApprovals} approval(s) due to its size or modified files. It currently has ${approvalCount}.`);
+            } else {
+              console.log(`✅ Success: PR has ${approvalCount} approval(s), meeting the requirement.`);
+            }

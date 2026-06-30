@@ -1,0 +1,63 @@
+name: "Validate external contributor approvals"
+description: "This reusable GitHub Actions workflow requires a minimum number of approvals for PRs from external contributors."
+
+on:
+  workflow_call:
+    inputs:
+      approvals-for-external-contributors:
+        description: "Required number of approvers for PRs from external contributors."
+        required: false
+        type: number
+        default: 0
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-external-contributor-approvals:
+    name: "External contributor approvals"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require approvals for external contributors
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const requiredApprovals = ${{ inputs.approvals-for-external-contributors }};
+            const author = context.payload.pull_request.user.login;
+            const authorAssociation = context.payload.pull_request.author_association;
+            const internalAssociations = ['OWNER', 'MEMBER', 'COLLABORATOR'];
+
+            if (internalAssociations.includes(authorAssociation)) {
+              console.log(`PR author '${author}' is a '${authorAssociation}'. Skipping external contributor approval check.`);
+              return;
+            }
+
+            console.log(`PR author '${author}' is an external contributor ('${authorAssociation}'). Checking for ${requiredApprovals} approval(s).`);
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            // The list of reviews can have multiple reviews from the same user.
+            // We only want to count the most recent *submitted* review from each user.
+            const latestReviews = {};
+            for (const review of reviews) {
+              if (review.state === 'PENDING') {
+                continue; // Ignore pending reviews
+              }
+              // If we haven't seen this user, or this review is more recent, store it.
+              if (!latestReviews[review.user.login] || new Date(review.submitted_at) > new Date(latestReviews[review.user.login].submitted_at)) {
+                latestReviews[review.user.login] = review;
+              }
+            }
+
+            const approvalCount = Object.values(latestReviews).filter(r => r.state === 'APPROVED').length;
+
+            if (approvalCount < requiredApprovals) {
+              core.setFailed(`❌ This PR from an external contributor requires at least ${requiredApprovals} approval(s). It currently has ${approvalCount}. 🔄 Re-run workflow manually when approvals are complete.`);
+            } else {
+              console.log(`✅ Success: PR from an external contributor has ${approvalCount} approval(s).`);
+            }
