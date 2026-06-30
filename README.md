@@ -24,7 +24,7 @@ on:
 
 jobs:
   validate-genai-disclosure:
-    uses: NOAA-EMC/ci-validate-pr/validate-genai-disclosure.yaml@a3c7e3ee61dc1c6f879a59d82d1f48e1e9f9fffa
+    uses: NOAA-EMC/ci-validate-pr/validate-genai-disclosure.yaml@d211eaedc2634c9f228a6c3cd5da40b00bb9fc4a
 ```
 
 ## Validate critical change approvals: `validate-critical-change-approvals.yaml`
@@ -46,7 +46,7 @@ on:
 
 jobs:
   validate-critical-approvals:
-    uses: NOAA-EMC/ci-validate-pr/validate-critical-change-approvals.yaml@a3c7e3ee61dc1c6f879a59d82d1f48e1e9f9fffa
+    uses: NOAA-EMC/ci-validate-pr/validate-critical-change-approvals.yaml@d211eaedc2634c9f228a6c3cd5da40b00bb9fc4a
     with:
       approvals-for-critical-changes: 2
       critical-file-count: 20
@@ -83,7 +83,7 @@ on:
 
 jobs:
   validate-external-approvals:
-    uses: NOAA-EMC/ci-validate-pr/validate-external-contributor-approvals.yaml@a3c7e3ee61dc1c6f879a59d82d1f48e1e9f9fffa
+    uses: NOAA-EMC/ci-validate-pr/validate-external-contributor-approvals.yaml@d211eaedc2634c9f228a6c3cd5da40b00bb9fc4a
     with:
       approvals-for-external-contributors: 2
 ```
